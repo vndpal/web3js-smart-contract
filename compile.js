@@ -2,7 +2,7 @@ const solc = require("solc");
 const path = require("path");
 const fs = require("fs");
 
-const contractName = "MyFirstContract";
+const contractName = "MyVotingContract";
 const fileName = `${contractName}.sol`;
 
 // Read the Solidity source code from the file system
@@ -34,7 +34,7 @@ const bytecode =
   compiledCode.contracts[fileName][contractName].evm.bytecode.object;
 
 // Write the bytecode to a new file
-const bytecodePath = path.join(__dirname, "MyFirstContractBytecode.bin");
+const bytecodePath = path.join(__dirname, "MyVotingContractBytecode.bin");
 fs.writeFileSync(bytecodePath, bytecode);
 
 // Log the compiled contract code to the console
@@ -44,7 +44,7 @@ console.log("Contract Bytecode:\n", bytecode);
 const abi = compiledCode.contracts[fileName][contractName].abi;
 
 // Write the Contract ABI to a new file
-const abiPath = path.join(__dirname, "MyFirstContractAbi.json");
+const abiPath = path.join(__dirname, "MyVotingContractAbi.json");
 fs.writeFileSync(abiPath, JSON.stringify(abi, null, "\t"));
 
 // Log the Contract ABI to the console

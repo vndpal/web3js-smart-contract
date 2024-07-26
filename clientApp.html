@@ -1,126 +1,204 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Smart Contract Interaction</title>
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Voting Application</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            background: #f4f4f9;
-            margin: 0;
-            padding: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-        }
-        .container {
-            background: #ffffff;
-            border-radius: 10px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-            width: 100%;
-            max-width: 500px;
-            padding: 20px;
-            text-align: center;
-        }
-        h1 {
-            color: #333;
-            margin-bottom: 20px;
-        }
-        button {
-            padding: 12px 20px;
-            border: none;
-            border-radius: 5px;
-            background-color: #007bff;
-            color: #ffffff;
-            font-size: 16px;
-            cursor: pointer;
-            transition: background-color 0.3s ease;
-        }
-        button:hover {
-            background-color: #0056b3;
-        }
-        .result {
-            margin-top: 20px;
-            padding: 10px;
-            background-color: #f8f9fa;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            color: #333;
-            white-space: pre-wrap;
-        }
-        .error {
-            color: #e3342f;
-        }
+      body {
+        font-family: Arial, sans-serif;
+        background: #121212;
+        margin: 0;
+        padding: 0;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+      }
+      .container {
+        background: #1e1e1e;
+        border-radius: 10px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
+        width: 100%;
+        max-width: 600px;
+        padding: 30px;
+        text-align: center;
+        box-sizing: border-box;
+      }
+      h1 {
+        color: #ffffff;
+        margin-bottom: 30px;
+        font-size: 24px;
+      }
+      button {
+        padding: 12px 20px;
+        border: none;
+        border-radius: 5px;
+        background-color: #007bff;
+        color: #ffffff;
+        font-size: 16px;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+        margin: 10px;
+      }
+      button:hover {
+        background-color: #0056b3;
+      }
+      select {
+        padding: 10px;
+        border: 1px solid #444;
+        border-radius: 5px;
+        font-size: 16px;
+        background-color: #2a2a2a;
+        color: #ffffff;
+        margin: 10px;
+      }
+      .result {
+        margin-top: 20px;
+        padding: 15px;
+        background-color: #2a2a2a;
+        border: 1px solid #444;
+        border-radius: 5px;
+        color: #ffffff;
+        text-align: left;
+        white-space: pre-wrap;
+        max-height: 300px;
+        overflow-y: auto;
+      }
+      .error {
+        color: #e3342f;
+      }
+      .candidate-list {
+        margin: 20px 0;
+        text-align: left;
+      }
     </style>
     <script src="https://cdn.jsdelivr.net/npm/web3@1.6.0/dist/web3.min.js"></script>
-</head>
-<body>
+  </head>
+  <body>
     <div class="container">
-        <h1>Smart Contract Interaction</h1>
-        <button id="callContractButton">Get and Increment My Number</button>
-        <div class="result" id="result"></div>
+      <h1>Voting Application</h1>
+      <button id="loadCandidatesButton">Load Candidates</button>
+      <div id="candidatesContainer">
+        <select id="candidatesSelect">
+          <option value="" disabled selected>Select a candidate</option>
+        </select>
+        <button id="voteButton">Vote</button>
+      </div>
+      <div class="result" id="result"></div>
     </div>
 
     <script>
-        // Initialize Web3
-        const web3 = new Web3('http://127.0.0.1:8545/');
+      // Initialize Web3
+      const web3 = new Web3("http://127.0.0.1:8545/");
 
-        // Function to load ABI and contract address
-        async function loadContractData() {
-            try {
-                const abiResponse = await fetch('./MyFirstContractAbi.json');
-                const abi = await abiResponse.json();
-                
-                const addressResponse = await fetch('./MyFirstContractAddress.txt');
-                const address = await addressResponse.text();
-                
-                // Ensure address is trimmed
-                const trimmedAddress = address.trim();
-                
-                return { abi, address: trimmedAddress };
-            } catch (error) {
-                console.error('Error loading contract data:', error);
-                throw error;
-            }
+      // Function to load ABI and contract address
+      async function loadContractData() {
+        try {
+          const abiResponse = await fetch("./MyVotingContractAbi.json");
+          const abi = await abiResponse.json();
+
+          const addressResponse = await fetch("./MyVotingContractAddress.txt");
+          const address = await addressResponse.text();
+
+          // Ensure address is trimmed
+          const trimmedAddress = address.trim();
+
+          return { abi, address: trimmedAddress };
+        } catch (error) {
+          console.error("Error loading contract data:", error);
+          throw error;
         }
+      }
 
-        // Function to interact with the contract
-        async function interactWithContract() {
-            try {
-                const { abi, address } = await loadContractData();
+      // Function to load candidates
+      async function loadCandidates() {
+        try {
+          const { abi, address } = await loadContractData();
+          const contract = new web3.eth.Contract(abi, address);
 
-                // Create a contract instance
-                const contract = new web3.eth.Contract(abi, address);
+          // Get the list of candidates
+          const candidates = await contract.methods.getCandidates().call();
 
-                const accounts = await web3.eth.getAccounts();
-                const defaultAccount = accounts[0];
+          // Populate the candidates dropdown
+          const selectElement = document.getElementById("candidatesSelect");
+          selectElement.innerHTML =
+            '<option value="" disabled selected>Select a candidate</option>';
+          candidates.forEach((candidate) => {
+            const option = document.createElement("option");
+            option.value = candidate;
+            option.textContent = candidate;
+            selectElement.appendChild(option);
+          });
 
-                // Get the current value of my number
-                const myNumber = await contract.methods.myNumber().call();
-                document.getElementById('result').innerText = `Current myNumber value: ${myNumber}`;
+          // Fetch and display votes for all candidates
+          const votesList = await Promise.all(
+            candidates.map((candidate) =>
+              contract.methods
+                .totalVotesFor(candidate)
+                .call()
+                .then((votes) => ({ candidate, votes }))
+            )
+          );
 
-                // Increment my number
-                const receipt = await contract.methods.setMyNumber(BigInt(myNumber) + 1n).send({
-                    from: defaultAccount,
-                    gas: 1000000,
-                    gasPrice: '10000000000',
-                });
-                console.log('Transaction Hash: ' + receipt.transactionHash);
-
-                // Get the updated value of my number
-                const myNumberUpdated = await contract.methods.myNumber().call();
-                document.getElementById('result').innerText += `\nUpdated myNumber value: ${myNumberUpdated}`;
-            } catch (error) {
-                console.error(error);
-                document.getElementById('result').innerText = `Error: ${error.message}`;
-                document.getElementById('result').classList.add('error');
-            }
+          let resultText = "Candidates and their votes:\n";
+          votesList.forEach(({ candidate, votes }) => {
+            resultText += `${candidate}: ${votes} votes\n`;
+          });
+          document.getElementById("result").innerText = resultText;
+        } catch (error) {
+          console.error(error);
+          document.getElementById(
+            "result"
+          ).innerText = `Error: ${error.message}`;
+          document.getElementById("result").classList.add("error");
         }
+      }
 
-        // Add event listener to button
-        document.getElementById('callContractButton').addEventListener('click', interactWithContract);
+      // Function to vote for a candidate
+      async function voteForCandidate() {
+        try {
+          const { abi, address } = await loadContractData();
+          const contract = new web3.eth.Contract(abi, address);
+
+          const accounts = await web3.eth.getAccounts();
+          const defaultAccount = accounts[0];
+
+          const candidate = document.getElementById("candidatesSelect").value;
+          if (!candidate) {
+            document.getElementById("result").innerText =
+              "Please select a candidate.";
+            return;
+          }
+
+          // Cast a vote for the selected candidate
+          const receipt = await contract.methods
+            .voteForCandidate(candidate)
+            .send({
+              from: defaultAccount,
+              gas: 1000000,
+              gasPrice: "10000000000",
+            });
+          console.log("Transaction Hash: " + receipt.transactionHash);
+
+          // Update votes for all candidates
+          await loadCandidates(); // Refresh the list of candidates and votes
+        } catch (error) {
+          console.error(error);
+          document.getElementById(
+            "result"
+          ).innerText = `Error: ${error.message}`;
+          document.getElementById("result").classList.add("error");
+        }
+      }
+
+      // Add event listeners to buttons
+      document
+        .getElementById("loadCandidatesButton")
+        .addEventListener("click", loadCandidates);
+      document
+        .getElementById("voteButton")
+        .addEventListener("click", voteForCandidate);
     </script>
-</body>
+  </body>
 </html>
